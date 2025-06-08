@@ -1,6 +1,7 @@
 // Halaman untuk menampilkan lokasi pengguna dan melacaknya dengan Google Maps API
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'home_page.dart';
 import 'profile_page.dart';
@@ -9,6 +10,7 @@ import 'currency_converter_page.dart';
 import 'settings_page.dart';
 import 'quran_page.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
+import '../widgets/google_map_widget.dart';
 
 class LocationPage extends StatefulWidget {
   @override
@@ -18,7 +20,6 @@ class LocationPage extends StatefulWidget {
 class _LocationPageState extends State<LocationPage> {
   GoogleMapController? _mapController;
   LatLng? _currentPosition;
-  String? _error;
 
   // Simulasi posisi user (misal: Jakarta)
   final LatLng _defaultPosition = LatLng(-6.200000, 106.816666);
@@ -69,8 +70,37 @@ class _LocationPageState extends State<LocationPage> {
     });
   }
 
-  void _showCurrentLocation() {
-    if (_currentPosition != null && _mapController != null) {
+  void _showCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aktifkan layanan lokasi di perangkat Anda.')),
+      );
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Izin lokasi ditolak.')),
+        );
+        return;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Izin lokasi ditolak permanen.')),
+      );
+      return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    setState(() {
+      _currentPosition = LatLng(position.latitude, position.longitude);
+    });
+    if (_mapController != null) {
       _mapController!.animateCamera(
         CameraUpdate.newLatLngZoom(_currentPosition!, 15),
       );
@@ -102,6 +132,8 @@ class _LocationPageState extends State<LocationPage> {
               onTap: () => _showCurrentLocation(),
             ),
           ),
+          const SizedBox(height: 16),
+          GoogleMapWidget(initialPosition: _currentPosition ?? _defaultPosition),
         ],
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
