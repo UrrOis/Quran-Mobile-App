@@ -75,12 +75,14 @@ class AuthApi {
     return null;
   }
 
-  // Update user data (name, email, password)
+  // Update user data (name, email, password, pesan, kesan)
   Future<bool> updateUser({
     required int userId,
     String? name,
     String? email,
     String? password,
+    String? pesan,
+    String? kesan,
   }) async {
     final db = await DatabaseHelper.instance.database;
     final Map<String, dynamic> updateData = {};
@@ -89,6 +91,8 @@ class AuthApi {
     if (password != null && password.isNotEmpty) {
       updateData['password'] = BcryptHelper.hashPassword(password);
     }
+    if (pesan != null) updateData['pesan'] = pesan;
+    if (kesan != null) updateData['kesan'] = kesan;
     if (updateData.isEmpty) return false;
     final count = await db.update(
       'users',

@@ -1,9 +1,9 @@
-// Widget untuk menampilkan hasil konversi uang
 import 'package:flutter/material.dart';
+
 import '../api/currency_api_service.dart';
 import '../api/models/currency_rates.dart';
 
-/// Widget for converting between IDR, USD, JPY, and TRY using locally fetched rates.
+/// Widget konversi mata uang dengan fitur swap dan refresh.
 class CurrencyConverterWidget extends StatefulWidget {
   const CurrencyConverterWidget({Key? key}) : super(key: key);
 
@@ -28,7 +28,7 @@ class _CurrencyConverterWidgetState extends State<CurrencyConverterWidget> {
     _fetchRates();
   }
 
-  /// Fetches the latest currency rates from the API.
+  /// Ambil kurs terbaru dari API
   Future<void> _fetchRates() async {
     setState(() {
       _loading = true;
@@ -49,7 +49,7 @@ class _CurrencyConverterWidgetState extends State<CurrencyConverterWidget> {
     }
   }
 
-  /// Converts the input amount from [_fromCurrency] to [_toCurrency] using local rates.
+  /// Konversi nilai dari [_fromCurrency] ke [_toCurrency]
   void _convert() {
     if (_rates == null) return;
     final fromRate = _rates!.rates[_fromCurrency];
@@ -95,7 +95,18 @@ class _CurrencyConverterWidgetState extends State<CurrencyConverterWidget> {
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
+                IconButton(
+                  icon: const Icon(Icons.swap_horiz, color: Colors.deepPurple),
+                  tooltip: 'Balikkan mata uang',
+                  onPressed: () {
+                    setState(() {
+                      final temp = _fromCurrency;
+                      _fromCurrency = _toCurrency;
+                      _toCurrency = temp;
+                    });
+                    _convert();
+                  },
+                ),
                 Expanded(
                   child: DropdownButton<String>(
                     value: _toCurrency,
@@ -115,7 +126,9 @@ class _CurrencyConverterWidgetState extends State<CurrencyConverterWidget> {
             ),
             const SizedBox(height: 16),
             TextField(
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Amount',
                 border: OutlineInputBorder(),

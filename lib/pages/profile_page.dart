@@ -174,6 +174,81 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _showPesanKesanDialog() async {
+    String pesan = _user?.pesan ?? '';
+    String kesan = _user?.kesan ?? '';
+    String? errorMsg;
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Pesan & Kesan'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    decoration: InputDecoration(labelText: 'Pesan'),
+                    controller: TextEditingController(text: pesan),
+                    onChanged: (v) => pesan = v,
+                    maxLines: 2,
+                  ),
+                  TextField(
+                    decoration: InputDecoration(labelText: 'Kesan'),
+                    controller: TextEditingController(text: kesan),
+                    onChanged: (v) => kesan = v,
+                    maxLines: 2,
+                  ),
+                  if (errorMsg != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        errorMsg!,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (_user == null) return;
+                    final updated = await AuthApi().updateUser(
+                      userId: _user!.id!,
+                      name: null,
+                      email: null,
+                      password: null,
+                      pesan: pesan,
+                      kesan: kesan,
+                    );
+                    if (updated) {
+                      setState(() => errorMsg = null);
+                      await _loadUser();
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Pesan & Kesan berhasil disimpan!'),
+                        ),
+                      );
+                    } else {
+                      setState(() => errorMsg = 'Gagal menyimpan!');
+                    }
+                  },
+                  child: Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -339,6 +414,53 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
+                  if (_user != null) ...[
+                    Card(
+                      color: Colors.green[50],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pesan:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              _user?.pesan?.isNotEmpty == true
+                                  ? _user!.pesan!
+                                  : 'Belum ada pesan.',
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Kesan:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              _user?.kesan?.isNotEmpty == true
+                                  ? _user!.kesan!
+                                  : 'Belum ada kesan.',
+                            ),
+                            SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                icon: Icon(Icons.edit),
+                                label: Text('Edit Pesan & Kesan'),
+                                onPressed: _showPesanKesanDialog,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
       bottomNavigationBar: CustomBottomNavigationBar(

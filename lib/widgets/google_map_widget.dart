@@ -6,7 +6,8 @@ import 'package:http/http.dart' as http;
 /// Widget Google Maps dengan fitur pencarian lokasi dan rute dasar.
 class GoogleMapWidget extends StatefulWidget {
   final LatLng initialPosition;
-  const GoogleMapWidget({Key? key, required this.initialPosition}) : super(key: key);
+  const GoogleMapWidget({Key? key, required this.initialPosition})
+    : super(key: key);
 
   @override
   State<GoogleMapWidget> createState() => _GoogleMapWidgetState();
@@ -31,7 +32,10 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                 decoration: const InputDecoration(
                   hintText: 'Cari lokasi...',
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 0,
+                  ),
                 ),
                 onSubmitted: (value) => _searchLocation(value),
               ),
@@ -45,7 +49,10 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
         if (_searchError != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text(_searchError!, style: const TextStyle(color: Colors.red)),
+            child: Text(
+              _searchError!,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         const SizedBox(height: 8),
         SizedBox(
@@ -73,11 +80,11 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     );
   }
 
-  /// Fungsi untuk mengambil rute (directions) dari posisi awal ke tujuan
+  /// Ambil rute (directions) dari posisi awal ke tujuan
   Future<void> _getDirections(LatLng origin, LatLng destination) async {
     final apiKey = 'AIzaSyD7utY0gRcb9NorPbcVfVxpF2Kk911RheU';
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=$apiKey'
+      'https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=$apiKey',
     );
     final response = await http.get(url);
     if (response.statusCode == 200) {
@@ -97,7 +104,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     }
   }
 
-  // Fungsi untuk decode polyline Google
+  /// Decode polyline Google ke List<LatLng>
   List<LatLng> _decodePolyline(String encoded) {
     List<LatLng> polyline = [];
     int index = 0, len = encoded.length;
@@ -125,13 +132,14 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     return polyline;
   }
 
-  /// Fungsi pencarian lokasi menggunakan Google Geocoding API
+  /// Pencarian lokasi menggunakan Google Geocoding API
   Future<void> _searchLocation(String query) async {
     setState(() => _searchError = null);
     if (query.isEmpty) return;
     final apiKey = 'AIzaSyD7utY0gRcb9NorPbcVfVxpF2Kk911RheU';
     final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(query)}&key=$apiKey');
+      'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(query)}&key=$apiKey',
+    );
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);

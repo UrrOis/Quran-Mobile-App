@@ -1,5 +1,7 @@
 // Halaman untuk melihat waktu sholat berdasarkan lokasi pengguna
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../api/prayer_api_service.dart';
 import 'home_page.dart';
 import 'profile_page.dart';
@@ -29,6 +31,31 @@ class _PrayerTimePageState extends State<PrayerTimePage> {
   String? _error;
   int _selectedIndex = 2; // PrayerTime tab
   final int userId = 1; // Ganti dengan user login sebenarnya
+
+  // Tambahkan timer untuk realtime clock
+  Timer? _clockTimer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _startRealtimeClock();
+  }
+
+  void _startRealtimeClock() {
+    _clockTimer?.cancel();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
+  }
 
   void _onCitySelected(City city) {
     setState(() {
@@ -100,13 +127,176 @@ class _PrayerTimePageState extends State<PrayerTimePage> {
     );
   }
 
+  /// Helper untuk konversi waktu ke zona lain
+  String _convertTime(String time, int offsetHours) {
+    try {
+      final now = DateTime.now();
+      final parts = time.split(":");
+      if (parts.length != 2) return time;
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      final dt = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
+      ).add(Duration(hours: offsetHours));
+      return DateFormat('HH:mm').format(dt);
+    } catch (_) {
+      return time;
+    }
+  }
+
+  /// Widget untuk menampilkan waktu sholat dengan konversi zona waktu
+  Widget _buildPrayerTimeRow(String label, String? time) {
+    if (time == null || time.isEmpty) return SizedBox();
+    // Jeddah UTC+3, WIB UTC+7, WITA UTC+8, WIT UTC+9
+    final jeddah = _convertTime(time, -4); // WIB (UTC+7) ke Jeddah (UTC+3)
+    final wib = time;
+    final wita = _convertTime(time, 1); // WIB ke WITA
+    final wit = _convertTime(time, 2); // WIB ke WIT
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Jeddah: $jeddah',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'WIB: $wib',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'WITA: $wita',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'WIT: $wit',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final jeddah = _now.toUtc().add(const Duration(hours: 3));
+    final wib = _now.toUtc().add(const Duration(hours: 7));
+    final wita = _now.toUtc().add(const Duration(hours: 8));
+    final wit = _now.toUtc().add(const Duration(hours: 9));
+    String fmt(DateTime dt) => DateFormat('HH:mm:ss').format(dt);
+
     return Scaffold(
       appBar: AppBar(title: Text('Jadwal Sholat')),
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [
+          if (_selectedCity != null)
+            Card(
+              color: Colors.deepPurple[50],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on, color: Colors.deepPurple),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Jadwal sholat untuk: ${_selectedCity!.lokasi}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4527A0),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Card(
+            color: Colors.deepPurple[50],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Waktu Saat Ini',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple[800],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Jeddah (UTC+3): ${fmt(jeddah)}',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'WIB (UTC+7): ${fmt(wib)}',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'WITA (UTC+8): ${fmt(wita)}',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'WIT (UTC+9): ${fmt(wit)}',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           CitySearchWidget(onCitySelected: _onCitySelected),
           SizedBox(height: 16),
           DatePickerWidget(
@@ -288,6 +478,17 @@ class _PrayerTimePageState extends State<PrayerTimePage> {
               );
             },
           ),
+          if (_prayerSchedule != null) ...[
+            _buildPrayerTimeRow('Imsak', _prayerSchedule?.imsak),
+            _buildPrayerTimeRow('Subuh', _prayerSchedule?.subuh),
+            _buildPrayerTimeRow('Terbit', _prayerSchedule?.terbit),
+            _buildPrayerTimeRow('Dhuha', _prayerSchedule?.dhuha),
+            _buildPrayerTimeRow('Dzuhur', _prayerSchedule?.dzuhur),
+            _buildPrayerTimeRow('Ashar', _prayerSchedule?.ashar),
+            _buildPrayerTimeRow('Maghrib', _prayerSchedule?.maghrib),
+            _buildPrayerTimeRow('Isya', _prayerSchedule?.isya),
+            const SizedBox(height: 16),
+          ],
         ],
       ),
       bottomNavigationBar: CustomBottomNavigationBar(

@@ -1,8 +1,8 @@
 // Halaman untuk menampilkan lokasi pengguna dan melacaknya dengan Google Maps API
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:async';
 import 'home_page.dart';
 import 'profile_page.dart';
 import 'prayer_time_page.dart';
@@ -21,7 +21,7 @@ class _LocationPageState extends State<LocationPage> {
   GoogleMapController? _mapController;
   LatLng? _currentPosition;
 
-  // Simulasi posisi user (misal: Jakarta)
+  // Lokasi default (Jakarta)
   final LatLng _defaultPosition = LatLng(-6.200000, 106.816666);
   int _selectedIndex = 4; // Location tab
 
@@ -62,7 +62,7 @@ class _LocationPageState extends State<LocationPage> {
   @override
   void initState() {
     super.initState();
-    // Simulasi: langsung set posisi default
+    // Set posisi default saat inisialisasi
     Future.delayed(Duration.zero, () {
       setState(() {
         _currentPosition = _defaultPosition;
@@ -70,11 +70,14 @@ class _LocationPageState extends State<LocationPage> {
     });
   }
 
+  /// Ambil lokasi user dan pindahkan kamera ke posisi user
   void _showCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aktifkan layanan lokasi di perangkat Anda.')),
+        const SnackBar(
+          content: Text('Aktifkan layanan lokasi di perangkat Anda.'),
+        ),
       );
       return;
     }
@@ -83,9 +86,9 @@ class _LocationPageState extends State<LocationPage> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Izin lokasi ditolak.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak.')));
         return;
       }
     }
@@ -96,7 +99,9 @@ class _LocationPageState extends State<LocationPage> {
       return;
     }
 
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
     setState(() {
       _currentPosition = LatLng(position.latitude, position.longitude);
     });
@@ -110,9 +115,9 @@ class _LocationPageState extends State<LocationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Lokasi Saya')),
+      appBar: AppBar(title: const Text('Lokasi Saya')),
       body: ListView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         children: [
           Card(
             color: Colors.deepPurple[50],
@@ -121,19 +126,21 @@ class _LocationPageState extends State<LocationPage> {
             ),
             elevation: 2,
             child: ListTile(
-              leading: Icon(Icons.location_on, color: Colors.deepPurple[400]),
-              title: Text(
+              leading: const Icon(Icons.location_on, color: Colors.deepPurple),
+              title: const Text(
                 'Lihat Lokasi Saya',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple[800],
+                  color: Color(0xFF4527A0),
                 ),
               ),
-              onTap: () => _showCurrentLocation(),
+              onTap: _showCurrentLocation,
             ),
           ),
           const SizedBox(height: 16),
-          GoogleMapWidget(initialPosition: _currentPosition ?? _defaultPosition),
+          GoogleMapWidget(
+            initialPosition: _currentPosition ?? _defaultPosition,
+          ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
