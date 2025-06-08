@@ -30,11 +30,19 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUser() async {
-    // Ganti dengan cara ambil user dari AuthApi/session/database sesuai implementasi Anda
-    final userMap =
-        await AuthApi().getUserData(); // pastikan AuthApi ada method ini
+    final userMap = await AuthApi().getUserData();
     setState(() {
       _user = userMap != null ? User.fromMap(userMap) : null;
+      if (_user != null && _user!.photo != null && _user!.photo!.isNotEmpty) {
+        final file = File(_user!.photo!);
+        if (file.existsSync()) {
+          _profileImage = file;
+        } else {
+          _profileImage = null;
+        }
+      } else {
+        _profileImage = null;
+      }
     });
   }
 
@@ -45,6 +53,11 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _profileImage = File(pickedFile.path);
       });
+      // Simpan path foto ke database
+      if (_user != null && pickedFile.path.isNotEmpty) {
+        await AuthApi().updateUser(userId: _user!.id!, photo: pickedFile.path);
+        await _loadUser();
+      }
     }
   }
 
@@ -276,15 +289,63 @@ class _ProfilePageState extends State<ProfilePage> {
                             backgroundImage:
                                 _profileImage != null
                                     ? FileImage(_profileImage!)
+                                    : (_user?.photo != null &&
+                                        _user!.photo!.isNotEmpty)
+                                    ? FileImage(File(_user!.photo!))
                                     : null,
                             child:
-                                _profileImage == null
+                                (_profileImage == null &&
+                                        (_user?.photo == null ||
+                                            _user!.photo!.isEmpty))
                                     ? Icon(
                                       Icons.person,
                                       size: 48,
                                       color: Colors.deepPurple[400],
                                     )
                                     : null,
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ElevatedButton.icon(
+                                icon: Icon(Icons.camera_alt),
+                                label: Text('Kamera'),
+                                onPressed: () => _pickImage(ImageSource.camera),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                icon: Icon(Icons.photo),
+                                label: Text('Galeri'),
+                                onPressed:
+                                    () => _pickImage(ImageSource.gallery),
+                              ),
+                              if (_user?.photo != null &&
+                                  _user!.photo!.isNotEmpty)
+                                SizedBox(width: 8),
+                              if (_user?.photo != null &&
+                                  _user!.photo!.isNotEmpty)
+                                ElevatedButton.icon(
+                                  icon: Icon(Icons.delete),
+                                  label: Text('Hapus'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red[300],
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () async {
+                                    if (_user != null) {
+                                      await AuthApi().updateUser(
+                                        userId: _user!.id!,
+                                        photo: '',
+                                      );
+                                      setState(() {
+                                        _profileImage = null;
+                                      });
+                                      await _loadUser();
+                                    }
+                                  },
+                                ),
+                            ],
                           ),
                           SizedBox(height: 16),
                           Text(

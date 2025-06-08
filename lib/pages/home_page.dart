@@ -10,6 +10,7 @@ import 'settings_page.dart';
 import 'quran_page.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../models/hadith.dart';
+import 'dart:io';
 
 class HomePage extends StatefulWidget {
   @override
@@ -21,6 +22,7 @@ class _HomePageState extends State<HomePage> {
   Map<String, dynamic>? _doa;
   bool _loadingDoa = true;
   String? _userName;
+  String? _userPhoto;
 
   HadithArbain? _hadithArbain;
   HadithBulughulMaram? _hadithBM;
@@ -97,6 +99,7 @@ class _HomePageState extends State<HomePage> {
     final userMap = await AuthApi().getUserData();
     setState(() {
       _userName = userMap != null ? userMap['name'] as String : null;
+      _userPhoto = userMap != null ? userMap['photo'] as String? : null;
     });
   }
 
@@ -161,11 +164,18 @@ class _HomePageState extends State<HomePage> {
                       child: child,
                     ),
                   ),
-              child: CircleAvatar(
-                key: ValueKey(_userName),
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Color(0xFF7F53AC)),
-              ),
+              child:
+                  (_userPhoto != null && _userPhoto!.isNotEmpty)
+                      ? CircleAvatar(
+                        key: ValueKey(_userPhoto),
+                        backgroundColor: Colors.white,
+                        backgroundImage: FileImage(File(_userPhoto!)),
+                      )
+                      : CircleAvatar(
+                        key: ValueKey(_userName),
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.person, color: Color(0xFF7F53AC)),
+                      ),
             ),
             SizedBox(width: 12),
             Expanded(

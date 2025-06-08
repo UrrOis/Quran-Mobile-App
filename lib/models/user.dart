@@ -5,6 +5,7 @@ class User {
   final String email;
   final String? pesan;
   final String? kesan;
+  final String? photo; // path or base64 string
 
   User({
     this.id,
@@ -12,6 +13,7 @@ class User {
     required this.email,
     this.pesan,
     this.kesan,
+    this.photo,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -21,6 +23,7 @@ class User {
       email: map['email'],
       pesan: map['pesan'],
       kesan: map['kesan'],
+      photo: map['photo'],
     );
   }
 
@@ -31,6 +34,7 @@ class User {
       'email': email,
       'pesan': pesan,
       'kesan': kesan,
+      'photo': photo,
     };
   }
 }

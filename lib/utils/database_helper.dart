@@ -28,7 +28,8 @@ class DatabaseHelper {
         email TEXT,
         password TEXT,
         pesan TEXT,
-        kesan TEXT
+        kesan TEXT,
+        photo TEXT
       )
     ''');
     await db.execute('''
@@ -125,5 +126,16 @@ class DatabaseHelper {
   Future<void> deleteCustomSchedule(int id) async {
     final db = await instance.database;
     await db.delete('prayer_times', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Update foto user (disimpan sebagai path lokal atau base64 string)
+  Future<int> updateUserPhoto(int userId, String photoPath) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'photo': photoPath},
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
   }
 }
