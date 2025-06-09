@@ -19,6 +19,79 @@ class _SettingsPageState extends State<SettingsPage> {
   int _selectedIndex = 6; // Settings tab
 
   final LocalAuthentication auth = LocalAuthentication();
+  bool _fingerprintEnabled = false;
+  bool _loadingFingerprint = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFingerprintStatus();
+  }
+
+  Future<void> _loadFingerprintStatus() async {
+    final enabled = await AuthApi().isFingerprintEnabled();
+    setState(() {
+      _fingerprintEnabled = enabled;
+      _loadingFingerprint = false;
+    });
+  }
+
+  Future<void> _enableFingerprint() async {
+    bool canCheck = await auth.canCheckBiometrics;
+    if (!canCheck) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fingerprint tidak tersedia di perangkat ini.')),
+      );
+      return;
+    }
+    bool authenticated = await auth.authenticate(
+      localizedReason: 'Aktifkan fingerprint untuk aplikasi',
+      options: const AuthenticationOptions(biometricOnly: true),
+    );
+    if (authenticated) {
+      await AuthApi().updateFingerprint();
+      setState(() {
+        _fingerprintEnabled = true;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Fingerprint diaktifkan!')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fingerprint gagal atau dibatalkan.')),
+      );
+    }
+  }
+
+  Future<void> _disableFingerprint() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: Text('Nonaktifkan Fingerprint?'),
+            content: Text('Apakah Anda yakin ingin menonaktifkan fingerprint?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text('Ya'),
+              ),
+            ],
+          ),
+    );
+    if (confirm == true) {
+      await AuthApi().disableFingerprint();
+      setState(() {
+        _fingerprintEnabled = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Fingerprint dinonaktifkan!')));
+    }
+  }
 
   Future<void> _showUpdateDialog() async {
     String newName = '';
@@ -72,27 +145,6 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       },
     );
-  }
-
-  Future<void> _fingerprintLogin() async {
-    bool canCheck = await auth.canCheckBiometrics;
-    if (!canCheck) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fingerprint tidak tersedia di perangkat ini.')),
-      );
-      return;
-    }
-    bool authenticated = await auth.authenticate(
-      localizedReason: 'Login dengan fingerprint',
-      options: const AuthenticationOptions(biometricOnly: true),
-    );
-    if (authenticated) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fingerprint gagal atau dibatalkan.')),
-      );
-    }
   }
 
   void _onItemTapped(int index) {
@@ -161,18 +213,50 @@ class _SettingsPageState extends State<SettingsPage> {
               borderRadius: BorderRadius.circular(14),
             ),
             elevation: 2,
-            child: ListTile(
-              leading: Icon(Icons.fingerprint, color: Colors.deepPurple[400]),
+            child: SwitchListTile(
+              secondary: Icon(Icons.fingerprint, color: Colors.deepPurple[400]),
               title: Text(
-                'Login dengan Fingerprint',
+                'Gunakan Fingerprint',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.deepPurple[800],
                 ),
               ),
-              onTap: _fingerprintLogin,
+              value: _fingerprintEnabled,
+              onChanged:
+                  _loadingFingerprint
+                      ? null
+                      : (val) async {
+                        if (val) {
+                          await _enableFingerprint();
+                        } else {
+                          await _disableFingerprint();
+                        }
+                      },
             ),
           ),
+          if (_fingerprintEnabled)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Card(
+                color: Colors.deepPurple[50],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 2,
+                child: ListTile(
+                  leading: Icon(Icons.refresh, color: Colors.deepPurple[400]),
+                  title: Text(
+                    'Update Fingerprint',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple[800],
+                    ),
+                  ),
+                  onTap: _enableFingerprint,
+                ),
+              ),
+            ),
           SizedBox(height: 10),
           Card(
             color: Colors.deepPurple[50],

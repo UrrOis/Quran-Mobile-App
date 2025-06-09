@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:local_auth/local_auth.dart';
 import '../utils/database_helper.dart';
 import '../utils/bcrypt_helper.dart';
 import '../utils/encryption_helper.dart';
@@ -114,5 +115,40 @@ class AuthApi {
       whereArgs: [userId],
     );
     return deleted > 0;
+  }
+
+  // Fingerprint: simpan preferensi fingerprint user
+  Future<void> setFingerprintEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('fingerprint_enabled', enabled);
+  }
+
+  Future<bool> isFingerprintEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('fingerprint_enabled') ?? false;
+  }
+
+  // Fungsi update fingerprint (dummy, karena update fingerprint biasanya diatur di device, bukan app)
+  Future<bool> updateFingerprint() async {
+    // Di aplikasi nyata, ini akan memicu proses autentikasi ulang fingerprint
+    await setFingerprintEnabled(true);
+    return true;
+  }
+
+  Future<bool> disableFingerprint() async {
+    await setFingerprintEnabled(false);
+    return true;
+  }
+
+  // Deteksi apakah device support fingerprint
+  Future<bool> isDeviceSupportFingerprint() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    try {
+      final List<BiometricType> availableBiometrics =
+          await auth.getAvailableBiometrics();
+      return availableBiometrics.contains(BiometricType.fingerprint);
+    } catch (e) {
+      return false;
+    }
   }
 }

@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'database_helper.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // Mengatur notifikasi untuk pengingat waktu sholat
 class NotificationHelper {
@@ -18,6 +20,20 @@ class NotificationHelper {
     final InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    // Tambahkan request permission notifikasi
+    if (Platform.isAndroid) {
+      if (await Permission.notification.isDenied) {
+        await Permission.notification.request();
+      }
+    } else if (Platform.isIOS) {
+      final iosInfo =
+          await flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin
+              >();
+      await iosInfo?.requestPermissions(alert: true, badge: true, sound: true);
+    }
     _initialized = true;
   }
 
